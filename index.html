@@ -70,8 +70,16 @@
     </style>
 </head>
 <body>
-    <div class="container">
+            <div class="container">
         <h1 class="text-center mb-4 text-primary">STEM Fest Stations</h1>
+        
+        <!-- Connection Status -->
+        <div class="card mb-3" id="connectionStatus">
+            <div class="card-body text-center">
+                <button id="testConnectionBtn" class="btn btn-info">Test Connection</button>
+                <small class="text-muted d-block mt-2">Click to test your Google Sheets connection</small>
+            </div>
+        </div>
         
         <!-- Dropdown 1: Grade Selection -->
         <div class="card mb-3">
@@ -139,6 +147,58 @@
                 <span class="visually-hidden">Loading...</span>
             </div>
             <p>Loading data...</p>
+        </div>
+
+        <!-- Setup Instructions -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Setup Instructions</h5>
+            </div>
+            <div class="card-body">
+                <h6>To connect to your Google Sheets:</h6>
+                <ol>
+                    <li><strong>Create Google Apps Script:</strong>
+                        <ul>
+                            <li>Go to <a href="https://script.google.com" target="_blank">script.google.com</a></li>
+                            <li>Click "New Project"</li>
+                            <li>Replace the default code with the provided Apps Script code</li>
+                            <li>Save the project (Ctrl+S)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Deploy as Web App:</strong>
+                        <ul>
+                            <li>Click "Deploy" → "New deployment"</li>
+                            <li>Choose type: "Web app"</li>
+                            <li>Execute as: "Me"</li>
+                            <li>Who has access: "Anyone"</li>
+                            <li>Click "Deploy"</li>
+                            <li>Copy the Web app URL</li>
+                        </ul>
+                    </li>
+                    <li><strong>Update HTML:</strong>
+                        <ul>
+                            <li>Replace "YOUR_SCRIPT_ID" in the WEB_APP_URL with your actual Apps Script deployment URL</li>
+                            <li>The URL should look like: <code>https://script.google.com/macros/s/SCRIPT_ID/exec</code></li>
+                        </ul>
+                    </li>
+                    <li><strong>Test Connection:</strong>
+                        <ul>
+                            <li>Click the "Test Connection" button above</li>
+                            <li>If successful, the connection status will disappear and you can use the app</li>
+                        </ul>
+                    </li>
+                </ol>
+                
+                <div class="alert alert-info">
+                    <strong>Note:</strong> Make sure your Google Sheet has the correct structure:
+                    <ul class="mb-0">
+                        <li>Sheet name: "MasterStations"</li>
+                        <li>Headers in row 3 (A3:M3)</li>
+                        <li>Data starting from row 4</li>
+                        <li>Required columns: Station Grade, Station Name, Sta #, Sta Code, Station Color Code, Container Type, Type Item, Station Item, Item Cost, Storage Location, Replenish, Elect, Tablecloth Name</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -226,7 +286,7 @@
         // Configuration
         const SPREADSHEET_ID = '1SIIZyYt5BPORZHbItfa6lRGyHxVNkK4Hp9cTuSgSKTA';
         const SHEET_NAME = 'MasterStations';
-        const WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL'; // Replace with your actual Web App URL
+        const WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'; // Replace YOUR_SCRIPT_ID with your actual Apps Script ID
         
         // Global variables
         let allData = [];
@@ -237,8 +297,8 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             editModal = new bootstrap.Modal(document.getElementById('editModal'));
-            loadData();
             setupEventListeners();
+            // Don't auto-load data - let user test connection first
         });
         
         function setupEventListeners() {
@@ -246,6 +306,7 @@
             document.getElementById('stationDropdown').addEventListener('change', handleStationChange);
             document.getElementById('addRowBtn').addEventListener('click', handleAddRow);
             document.getElementById('saveBtn').addEventListener('click', handleSave);
+            document.getElementById('testConnectionBtn').addEventListener('click', testConnection);
         }
         
         function showError(message) {
@@ -286,6 +347,50 @@
         
         function showLoading(show = true) {
             document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+        }
+        
+        function testConnection() {
+            if (WEB_APP_URL.includes('YOUR_SCRIPT_ID')) {
+                showError('Please update the WEB_APP_URL with your Google Apps Script deployment URL. See setup instructions below.');
+                return;
+            }
+            
+            showLoading(true);
+            const testBtn = document.getElementById('testConnectionBtn');
+            testBtn.disabled = true;
+            testBtn.textContent = 'Testing...';
+            
+            const callbackName = 'testCallback' + Date.now();
+            window[callbackName] = function(response) {
+                showLoading(false);
+                testBtn.disabled = false;
+                testBtn.textContent = 'Test Connection';
+                
+                if (response && (response.success !== false)) {
+                    showSuccess('Connection successful! Google Sheets is accessible.');
+                    document.getElementById('connectionStatus').style.display = 'none';
+                } else {
+                    showError('Connection failed: ' + (response?.error || 'Unknown error. Please check your Apps Script setup.'));
+                }
+                
+                // Cleanup
+                delete window[callbackName];
+                const script = document.querySelector(`script[src*="${callbackName}"]`);
+                if (script) document.head.removeChild(script);
+            };
+            
+            const script = document.createElement('script');
+            script.src = `${WEB_APP_URL}?action=getData&callback=${callbackName}`;
+            script.onerror = function() {
+                showLoading(false);
+                testBtn.disabled = false;
+                testBtn.textContent = 'Test Connection';
+                showError('Connection failed. Please verify your Apps Script URL and deployment settings.');
+                delete window[callbackName];
+                document.head.removeChild(script);
+            };
+            
+            document.head.appendChild(script);
         }
         
         function loadData() {
