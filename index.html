@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STEM Fest Stations</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin-top: 20px;
+        }
+        .card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 10px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .table th {
+            background-color: #495057;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .form-row {
+            margin-bottom: 15px;
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container-type-main { background-color: #e3f2fd; }
+        .container-type-tote1 { background-color: #f3e5f5; }
+        .container-type-tote2 { background-color: #e8f5e8; }
+        .container-type-tote3 { background-color: #fff3e0; }
+        .container-type-tote4 { background-color: #ffebee; }
+        .container-type-tote5 { background-color: #f1f8e9; }
+        .container-type-external { background-color: #fafafa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4 text-primary">STEM Fest Stations</h1>
+        
+        <!-- Dropdown 1: Grade Selection -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Grade Selection</h5>
+            </div>
+            <div class="card-body">
+                <select id="gradeDropdown" class="form-select">
+                    <option value="">Select Grade Level</option>
+                    <option value="K2">K2</option>
+                    <option value="3rd-12th">3rd-12th</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Dropdown 2: Station Selection -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Station Selection</h5>
+            </div>
+            <div class="card-body">
+                <select id="stationDropdown" class="form-select" disabled>
+                    <option value="">Select a Station</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Station Details Table -->
+        <div class="card mb-3" id="stationDetailsCard" style="display: none;">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Station Details</h5>
+                <button id="addRowBtn" class="btn btn-success btn-sm">
+                    <i class="fas fa-plus"></i> Add New Row
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-container">
+                    <table class="table table-striped table-hover" id="stationTable">
+                        <thead>
+                            <tr>
+                                <th>Select</th>
+                                <th>Sta Code</th>
+                                <th>Station Color Code</th>
+                                <th>Container Type</th>
+                                <th>Type Item</th>
+                                <th>Station Item</th>
+                                <th>Item Cost</th>
+                                <th>Storage Location</th>
+                                <th>Replenish</th>
+                                <th>Elect</th>
+                                <th>Tablecloth Name</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stationTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" class="loading" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading data...</p>
+        </div>
+    </div>
+
+    <!-- Edit/Add Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Edit Row</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <div class="row">
+                            <div class="col-md-6 form-row">
+                                <label for="editStaCode" class="form-label">Sta Code</label>
+                                <input type="text" class="form-control" id="editStaCode" required>
+                            </div>
+                            <div class="col-md-6 form-row">
+                                <label for="editStationColorCode" class="form-label">Station Color Code</label>
+                                <input type="text" class="form-control" id="editStationColorCode">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 form-row">
+                                <label for="editContainerType" class="form-label">Container Type</label>
+                                <select class="form-select" id="editContainerType" required>
+                                    <option value="">Select Container Type</option>
+                                    <option value="Main">Main</option>
+                                    <option value="Tote#1">Tote#1</option>
+                                    <option value="Tote#2">Tote#2</option>
+                                    <option value="Tote#3">Tote#3</option>
+                                    <option value="Tote#4">Tote#4</option>
+                                    <option value="Tote#5">Tote#5</option>
+                                    <option value="External">External</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 form-row">
+                                <label for="editTypeItem" class="form-label">Type Item</label>
+                                <input type="text" class="form-control" id="editTypeItem">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 form-row">
+                                <label for="editStationItem" class="form-label">Station Item</label>
+                                <input type="text" class="form-control" id="editStationItem">
+                            </div>
+                            <div class="col-md-6 form-row">
+                                <label for="editItemCost" class="form-label">Item Cost</label>
+                                <input type="text" class="form-control" id="editItemCost">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 form-row">
+                                <label for="editStorageLocation" class="form-label">Storage Location</label>
+                                <input type="text" class="form-control" id="editStorageLocation">
+                            </div>
+                            <div class="col-md-6 form-row">
+                                <label for="editReplenish" class="form-label">Replenish</label>
+                                <input type="text" class="form-control" id="editReplenish">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 form-row">
+                                <label for="editElect" class="form-label">Elect</label>
+                                <input type="text" class="form-control" id="editElect">
+                            </div>
+                            <div class="col-md-6 form-row">
+                                <label for="editTableclothName" class="form-label">Tablecloth Name</label>
+                                <input type="text" class="form-control" id="editTableclothName">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveBtn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Configuration
+        const SPREADSHEET_ID = '1SIIZyYt5BPORZHbItfa6lRGyHxVNkK4Hp9cTuSgSKTA';
+        const SHEET_NAME = 'MasterStations';
+        const WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL'; // Replace with your actual Web App URL
+        
+        // Global variables
+        let allData = [];
+        let filteredData = [];
+        let currentEditingRow = null;
+        let editModal;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            editModal = new bootstrap.Modal(document.getElementById('editModal'));
+            loadData();
+            setupEventListeners();
+        });
+        
+        function setupEventListeners() {
+            document.getElementById('gradeDropdown').addEventListener('change', handleGradeChange);
+            document.getElementById('stationDropdown').addEventListener('change', handleStationChange);
+            document.getElementById('addRowBtn').addEventListener('click', handleAddRow);
+            document.getElementById('saveBtn').addEventListener('click', handleSave);
+        }
+        
+        function showError(message) {
+            const alertHtml = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Error:</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            document.querySelector('.container').insertAdjacentHTML('afterbegin', alertHtml);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                const alert = document.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+        
+        function showSuccess(message) {
+            const alertHtml = `
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <strong>Success:</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            document.querySelector('.container').insertAdjacentHTML('afterbegin', alertHtml);
+            
+            // Auto-dismiss after 3 seconds
+            setTimeout(() => {
+                const alert = document.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 3000);
+        }
+        
+        function showLoading(show = true) {
+            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+        }
+        
+        function loadData() {
+            showLoading(true);
+            
+            // Create JSONP callback
+            const callbackName = 'jsonpCallback' + Date.now();
+            window[callbackName] = function(response) {
+                showLoading(false);
+                if (response.error) {
+                    showError('Failed to load data: ' + response.error);
+                    return;
+                }
+                
+                allData = response.data || [];
+                populateGradeDropdown();
+                
+                // Cleanup
+                delete window[callbackName];
+                document.head.removeChild(script);
+            };
+            
+            // Create script tag for JSONP
+            const script = document.createElement('script');
+            script.src = `${WEB_APP_URL}?action=getData&callback=${callbackName}`;
+            script.onerror = function() {
+                showLoading(false);
+                showError('Connection failed. Please check your internet connection and try again.');
+                delete window[callbackName];
+                document.head.removeChild(script);
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        function populateGradeDropdown() {
+            // Grade dropdown is static, so no need to populate from data
+            // But we can enable it now that data is loaded
+            document.getElementById('gradeDropdown').disabled = false;
+        }
+        
+        function handleGradeChange() {
+            const selectedGrade = document.getElementById('gradeDropdown').value;
+            const stationDropdown = document.getElementById('stationDropdown');
+            
+            if (!selectedGrade) {
+                stationDropdown.innerHTML = '<option value="">Select a Station</option>';
+                stationDropdown.disabled = true;
+                document.getElementById('stationDetailsCard').style.display = 'none';
+                return;
+            }
+            
+            // Filter data by grade and get unique stations
+            const gradeFilteredData = allData.filter(row => row['Station Grade'] === selectedGrade);
+            const uniqueStations = [...new Set(gradeFilteredData.map(row => ({
+                name: row['Station Name'],
+                staNum: row['Sta #']
+            })))];
+            
+            // Remove duplicates based on both name and sta#
+            const stationMap = new Map();
+            gradeFilteredData.forEach(row => {
+                const key = `${row['Station Name']}_${row['Sta #']}`;
+                if (!stationMap.has(key)) {
+                    stationMap.set(key, {
+                        name: row['Station Name'],
+                        staNum: row['Sta #']
+                    });
+                }
+            });
+            
+            const stations = Array.from(stationMap.values());
+            
+            // Populate station dropdown
+            stationDropdown.innerHTML = '<option value="">Select a Station</option>';
+            stations.forEach(station => {
+                const option = document.createElement('option');
+                option.value = `${station.name}|${station.staNum}`;
+                option.textContent = `${station.name} ${station.staNum}`;
+                stationDropdown.appendChild(option);
+            });
+            
+            stationDropdown.disabled = false;
+            document.getElementById('stationDetailsCard').style.display = 'none';
+        }
+        
+        function handleStationChange() {
+            const selectedStation = document.getElementById('stationDropdown').value;
+            
+            if (!selectedStation) {
+                document.getElementById('stationDetailsCard').style.display = 'none';
+                return;
+            }
+            
+            const [stationName, staNum] = selectedStation.split('|');
+            
+            // Filter data for selected station
+            filteredData = allData.filter(row => 
+                row['Station Name'] === stationName && row['Sta #'] === staNum
+            );
+            
+            // Sort by container type
+            const containerOrder = ['Main', 'Tote#1', 'Tote#2', 'Tote#3', 'Tote#4', 'Tote#5', 'External'];
+            filteredData.sort((a, b) => {
+                const aIndex = containerOrder.indexOf(a['Container Type']);
+                const bIndex = containerOrder.indexOf(b['Container Type']);
+                return aIndex - bIndex;
+            });
+            
+            displayStationDetails();
+        }
+        
+        function displayStationDetails() {
+            const tbody = document.getElementById('stationTableBody');
+            tbody.innerHTML = '';
+            
+            filteredData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                const containerClass = getContainerClass(row['Container Type']);
+                tr.className = containerClass;
+                
+                tr.innerHTML = `
+                    <td>
+                        <input type="radio" name="selectRow" value="${index}" class="form-check-input">
+                    </td>
+                    <td>${row['Sta Code'] || ''}</td>
+                    <td>${row['Station Color Code'] || ''}</td>
+                    <td>${row['Container Type'] || ''}</td>
+                    <td>${row['Type Item'] || ''}</td>
+                    <td>${row['Station Item'] || ''}</td>
+                    <td>${row['Item Cost'] || ''}</td>
+                    <td>${row['Storage Location'] || ''}</td>
+                    <td>${row['Replenish'] || ''}</td>
+                    <td>${row['Elect'] || ''}</td>
+                    <td>${row['Tablecloth Name'] || ''}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-1" onclick="editRow(${index})">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteRow(${index})">Delete</button>
+                    </td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('stationDetailsCard').style.display = 'block';
+        }
+        
+        function getContainerClass(containerType) {
+            const classMap = {
+                'Main': 'container-type-main',
+                'Tote#1': 'container-type-tote1',
+                'Tote#2': 'container-type-tote2',
+                'Tote#3': 'container-type-tote3',
+                'Tote#4': 'container-type-tote4',
+                'Tote#5': 'container-type-tote5',
+                'External': 'container-type-external'
+            };
+            return classMap[containerType] || '';
+        }
+        
+        function editRow(index) {
+            currentEditingRow = index;
+            const row = filteredData[index];
+            
+            // Populate form
+            document.getElementById('editStaCode').value = row['Sta Code'] || '';
+            document.getElementById('editStationColorCode').value = row['Station Color Code'] || '';
+            document.getElementById('editContainerType').value = row['Container Type'] || '';
+            document.getElementById('editTypeItem').value = row['Type Item'] || '';
+            document.getElementById('editStationItem').value = row['Station Item'] || '';
+            document.getElementById('editItemCost').value = row['Item Cost'] || '';
+            document.getElementById('editStorageLocation').value = row['Storage Location'] || '';
+            document.getElementById('editReplenish').value = row['Replenish'] || '';
+            document.getElementById('editElect').value = row['Elect'] || '';
+            document.getElementById('editTableclothName').value = row['Tablecloth Name'] || '';
+            
+            document.getElementById('modalTitle').textContent = 'Edit Row';
+            editModal.show();
+        }
+        
+        function deleteRow(index) {
+            if (confirm('Are you sure you want to delete this row?')) {
+                const row = filteredData[index];
+                sendDataToSheet('delete', row, index);
+            }
+        }
+        
+        function handleAddRow() {
+            const selectedStation = document.getElementById('stationDropdown').value;
+            if (!selectedStation) {
+                showError('Please select a station first.');
+                return;
+            }
+            
+            currentEditingRow = null;
+            
+            // Clear form
+            document.getElementById('editForm').reset();
+            
+            document.getElementById('modalTitle').textContent = 'Add New Row';
+            editModal.show();
+        }
+        
+        function handleSave() {
+            const formData = {
+                'Sta Code': document.getElementById('editStaCode').value,
+                'Station Color Code': document.getElementById('editStationColorCode').value,
+                'Container Type': document.getElementById('editContainerType').value,
+                'Type Item': document.getElementById('editTypeItem').value,
+                'Station Item': document.getElementById('editStationItem').value,
+                'Item Cost': document.getElementById('editItemCost').value,
+                'Storage Location': document.getElementById('editStorageLocation').value,
+                'Replenish': document.getElementById('editReplenish').value,
+                'Elect': document.getElementById('editElect').value,
+                'Tablecloth Name': document.getElementById('editTableclothName').value
+            };
+            
+            // Add station info for new rows
+            if (currentEditingRow === null) {
+                const selectedStation = document.getElementById('stationDropdown').value;
+                const [stationName, staNum] = selectedStation.split('|');
+                const selectedGrade = document.getElementById('gradeDropdown').value;
+                
+                formData['Station Name'] = stationName;
+                formData['Sta #'] = staNum;
+                formData['Station Grade'] = selectedGrade;
+            }
+            
+            const action = currentEditingRow === null ? 'add' : 'update';
+            sendDataToSheet(action, formData, currentEditingRow);
+        }
+        
+        function sendDataToSheet(action, data, rowIndex = null) {
+            showLoading(true);
+            
+            const callbackName = 'jsonpCallback' + Date.now();
+            window[callbackName] = function(response) {
+                showLoading(false);
+                
+                if (response.success) {
+                    showSuccess(getSuccessMessage(action));
+                    editModal.hide();
+                    loadData(); // Reload data to reflect changes
+                } else {
+                    showError('Operation failed: ' + (response.error || 'Unknown error'));
+                }
+                
+                // Cleanup
+                delete window[callbackName];
+                document.head.removeChild(script);
+            };
+            
+            // Prepare data for transmission
+            const postData = {
+                action: action,
+                data: data,
+                rowIndex: rowIndex,
+                spreadsheetId: SPREADSHEET_ID,
+                sheetName: SHEET_NAME
+            };
+            
+            // Create script tag for JSONP POST
+            const script = document.createElement('script');
+            const queryString = Object.keys(postData).map(key => 
+                encodeURIComponent(key) + '=' + encodeURIComponent(JSON.stringify(postData[key]))
+            ).join('&');
+            
+            script.src = `${WEB_APP_URL}?${queryString}&callback=${callbackName}`;
+            script.onerror = function() {
+                showLoading(false);
+                showError('Connection failed. Please check your internet connection and try again.');
+                delete window[callbackName];
+                document.head.removeChild(script);
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        function getSuccessMessage(action) {
+            switch(action) {
+                case 'add': return 'Row added successfully!';
+                case 'update': return 'Row updated successfully!';
+                case 'delete': return 'Row deleted successfully!';
+                default: return 'Operation completed successfully!';
+            }
+        }
+    </script>
+</body>
+</html>
