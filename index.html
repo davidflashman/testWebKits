@@ -200,6 +200,45 @@
                         <li>Required columns: Station Grade, Station Name, Sta #, Sta Code, Station Color Code, Container Type, Type Item, Station Item, Item Cost, Storage Location, Replenish, Elect, Tablecloth Name</li>
                     </ul>
                 </div>
+                
+                <div class="alert alert-warning">
+                    <strong>Updated Apps Script for better updates:</strong>
+                    <p>Make sure your Google Apps Script <code>updateRow</code> function looks like this:</p>
+                    <pre><code>function updateRow(data, rowIndex) {
+  const SPREADSHEET_ID = '1SIIZyYt5BPORZHbItfa6lRGyHxVNkK4Hp9cTuSgSKTA';
+  const SHEET_NAME = 'MasterStations';
+  
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    
+    // Get headers from row 3
+    const headerRange = sheet.getRange('A3:M3');
+    const headers = headerRange.getValues()[0];
+    
+    // Calculate actual row (add 4 because data starts at row 4, rowIndex is 0-based)
+    const actualRow = rowIndex + 4;
+    
+    console.log('Updating row:', actualRow, 'with data:', data);
+    
+    // Create row data array matching header order
+    const rowData = [];
+    for (let header of headers) {
+      rowData.push(data[header] || '');
+    }
+    
+    // Update the entire row
+    const range = sheet.getRange(actualRow, 1, 1, headers.length);
+    range.setValues([rowData]);
+    
+    return { success: true, message: 'Row updated successfully' };
+    
+  } catch (error) {
+    console.error('Update error:', error);
+    return { success: false, error: error.toString() };
+  }
+}</code></pre>
+                </div>
             </div>
         </div>
     </div>
@@ -285,7 +324,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
-       // Configuration
+      // Configuration
         const SPREADSHEET_ID = '1O6cbCOzu0KNVtmcO68pkDlZRslgj9K-RRk86-rhavOo';
         const SHEET_NAME = 'MasterStations';
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzX2FRdeXQt2ZJ_BTOSPnbKECAnD_byccGrAbE_q0ROW8z3wENdd3t2attfEAhcRwtX/exec'; // Replace YOUR_SCRIPT_ID with your actual Apps Script ID
@@ -344,10 +383,61 @@
             
             // Auto-dismiss after 3 seconds
             setTimeout(() => {
-                const alert = document.querySelector('.alert');
+                const alert = document.querySelector('.alert-success');
                 if (alert) {
                     alert.remove();
                 }
+            }, 3000);
+        }
+        
+        function showSuccessModal(message) {
+            // Create and show Bootstrap modal for success
+            const modalHtml = `
+                <div class="modal fade" id="successModal" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-check-circle me-2"></i>Success
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body text-center">
+                                <div class="mb-3">
+                                    <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                                </div>
+                                <h6>${message}</h6>
+                            </div>
+                            <div class="modal-footer justify-content-center">
+                                <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove any existing success modal
+            const existingModal = document.getElementById('successModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add the new modal to the page
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Show the modal
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+            
+            // Auto-dismiss after 3 seconds
+            setTimeout(() => {
+                successModal.hide();
+                setTimeout(() => {
+                    const modalElement = document.getElementById('successModal');
+                    if (modalElement) {
+                        modalElement.remove();
+                    }
+                }, 500);
             }, 3000);
         }
         
@@ -708,8 +798,9 @@
                 'Tablecloth Name': document.getElementById('editTableclothName').value
             };
             
-            // Add station info for new rows
+            // Add station info for new rows or preserve existing for updates
             if (currentEditingRow === null) {
+                // Adding new row
                 const selectedStation = document.getElementById('stationDropdown').value;
                 const [stationName, staNum] = selectedStation.split('|');
                 const selectedGrade = document.getElementById('gradeDropdown').value;
@@ -717,10 +808,42 @@
                 formData['Station Name'] = stationName;
                 formData['Sta #'] = staNum;
                 formData['Station Grade'] = selectedGrade;
+            } else {
+                // Updating existing row - preserve original station info
+                const originalRow = filteredData[currentEditingRow];
+                formData['Station Name'] = originalRow['Station Name'];
+                formData['Sta #'] = originalRow['Sta #'];
+                formData['Station Grade'] = originalRow['Station Grade'];
+                
+                // Find the actual row index in allData for updates
+                const actualRowIndex = allData.findIndex(row => 
+                    String(row['Station Name'] || '').trim() === String(originalRow['Station Name'] || '').trim() &&
+                    String(row['Sta #'] || '').trim() === String(originalRow['Sta #'] || '').trim() &&
+                    String(row['Sta Code'] || '').trim() === String(originalRow['Sta Code'] || '').trim() &&
+                    String(row['Container Type'] || '').trim() === String(originalRow['Container Type'] || '').trim()
+                );
+                
+                console.log('Original row:', originalRow);
+                console.log('Found actual row index in allData:', actualRowIndex);
             }
             
             const action = currentEditingRow === null ? 'add' : 'update';
-            sendDataToSheet(action, formData, currentEditingRow);
+            const rowIndex = currentEditingRow === null ? null : findActualRowIndex(filteredData[currentEditingRow]);
+            
+            console.log('Saving with action:', action, 'rowIndex:', rowIndex, 'formData:', formData);
+            
+            sendDataToSheet(action, formData, rowIndex);
+        }
+        
+        function findActualRowIndex(targetRow) {
+            // Find the actual index in allData for the row we want to update
+            return allData.findIndex(row => 
+                String(row['Station Name'] || '').trim() === String(targetRow['Station Name'] || '').trim() &&
+                String(row['Sta #'] || '').trim() === String(targetRow['Sta #'] || '').trim() &&
+                String(row['Sta Code'] || '').trim() === String(targetRow['Sta Code'] || '').trim() &&
+                String(row['Container Type'] || '').trim() === String(targetRow['Container Type'] || '').trim() &&
+                String(row['Station Item'] || '').trim() === String(targetRow['Station Item'] || '').trim()
+            );
         }
         
         function sendDataToSheet(action, data, rowIndex = null) {
@@ -731,9 +854,25 @@
                 showLoading(false);
                 
                 if (response.success) {
-                    showSuccess(getSuccessMessage(action));
+                    // Show Bootstrap success message
+                    showSuccessModal(getSuccessMessage(action));
                     editModal.hide();
-                    loadData(); // Reload data to reflect changes
+                    
+                    // Refresh the current view
+                    setTimeout(() => {
+                        loadData();
+                        // Restore the previous selections after data loads
+                        setTimeout(() => {
+                            const currentGrade = document.getElementById('gradeDropdown').value;
+                            const currentStation = document.getElementById('stationDropdown').value;
+                            if (currentGrade) {
+                                // Re-trigger the station selection to refresh the display
+                                if (currentStation) {
+                                    handleStationChange();
+                                }
+                            }
+                        }, 500);
+                    }, 100);
                 } else {
                     showError('Operation failed: ' + (response.error || 'Unknown error'));
                 }
