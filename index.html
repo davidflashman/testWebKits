@@ -184,7 +184,7 @@
                     <li><strong>Test Connection:</strong>
                         <ul>
                             <li>Click the "Test Connection" button above</li>
-                            <li>If successful, the connection status will disappear and you can use the app</li>
+                            <li>If successful, the connection status will disappear, and you can use the app</li>
                         </ul>
                     </li>
                 </ol>
@@ -286,7 +286,7 @@
         // Configuration
         const SPREADSHEET_ID = '1O6cbCOzu0KNVtmcO68pkDlZRslgj9K-RRk86-rhavOo';
         const SHEET_NAME = 'MasterStations';
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxAmcYZO9AqwSG5jD5i1E_NCS52Li4vZTpRcBTOK2-5KRFrk5sT9LdCYT19ZABHltSh/exec'; // Replace YOUR_SCRIPT_ID with your actual Apps Script ID
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzX2FRdeXQt2ZJ_BTOSPnbKECAnD_byccGrAbE_q0ROW8z3wENdd3t2attfEAhcRwtX/exec'; // Replace YOUR_SCRIPT_ID with your actual Apps Script ID
         
         // Global variables
         let allData = [];
@@ -346,7 +346,7 @@
         }
         
         function showLoading(show = true) {
-            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+            document.getElementById('loadingIndicator').style.display = show ? 'block': 'none';
         }
         
         function testConnection() {
