@@ -77,7 +77,8 @@
         <div class="card mb-3" id="connectionStatus">
             <div class="card-body text-center">
                 <button id="testConnectionBtn" class="btn btn-info me-2">Test Connection</button>
-                <button id="loadDataBtn" class="btn btn-success">Load Data</button>
+                <button id="loadDataBtn" class="btn btn-success me-2">Load Data</button>
+                <button id="debugDataBtn" class="btn btn-warning">Debug Data</button>
                 <small class="text-muted d-block mt-2">Test connection first, then load data</small>
             </div>
         </div>
@@ -284,7 +285,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
-    // Configuration
+       // Configuration
         const SPREADSHEET_ID = '1O6cbCOzu0KNVtmcO68pkDlZRslgj9K-RRk86-rhavOo';
         const SHEET_NAME = 'MasterStations';
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzX2FRdeXQt2ZJ_BTOSPnbKECAnD_byccGrAbE_q0ROW8z3wENdd3t2attfEAhcRwtX/exec'; // Replace YOUR_SCRIPT_ID with your actual Apps Script ID
@@ -311,6 +312,7 @@
             document.getElementById('loadDataBtn').addEventListener('click', function() {
                 loadData();
             });
+            document.getElementById('debugDataBtn').addEventListener('click', debugData);
         }
         
         function showError(message) {
@@ -397,6 +399,40 @@
             document.head.appendChild(script);
         }
         
+        function debugData() {
+            if (!allData || allData.length === 0) {
+                showError('No data loaded. Please load data first.');
+                return;
+            }
+            
+            console.log('=== DEBUG DATA ===');
+            console.log('Total rows:', allData.length);
+            console.log('First 5 rows:', allData.slice(0, 5));
+            
+            // Check column names
+            if (allData.length > 0) {
+                const firstRow = allData[0];
+                console.log('Available columns:', Object.keys(firstRow));
+                
+                // Check grade values
+                const gradeValues = [...new Set(allData.map(row => String(row['Station Grade'] || '').trim()))].filter(Boolean);
+                console.log('Unique Grade Values:', gradeValues);
+                
+                // Check station names for each grade
+                gradeValues.forEach(grade => {
+                    const gradeRows = allData.filter(row => String(row['Station Grade'] || '').trim() === grade);
+                    const stations = [...new Set(gradeRows.map(row => {
+                        const name = String(row['Station Name'] || '').trim();
+                        const num = String(row['Sta #'] || '').trim();
+                        return `${name} ${num}`;
+                    }))].filter(station => station.trim() !== ' ');
+                    console.log(`Grade "${grade}" stations:`, stations);
+                });
+            }
+            
+            showSuccess('Debug information logged to console. Press F12 to view.');
+        }
+        
         function loadData() {
             showLoading(true);
             
@@ -454,22 +490,30 @@
                 return;
             }
             
-            // Filter data by grade
+            // Filter data by grade with robust comparison
             const gradeFilteredData = allData.filter(row => {
-                const stationGrade = row['Station Grade'];
-                return stationGrade === selectedGrade;
+                const stationGrade = String(row['Station Grade'] || '').trim();
+                const targetGrade = String(selectedGrade || '').trim();
+                return stationGrade === targetGrade;
             });
             
-            console.log('Filtered data for grade:', selectedGrade, gradeFilteredData);
+            console.log('Selected grade:', selectedGrade);
+            console.log('Filtered data for grade:', gradeFilteredData);
+            console.log('Number of rows for this grade:', gradeFilteredData.length);
             
             // Get unique stations using Map to avoid duplicates
             const stationMap = new Map();
-            gradeFilteredData.forEach(row => {
-                const stationName = row['Station Name'];
-                const staNum = row['Sta #'];
+            gradeFilteredData.forEach((row, index) => {
+                const stationName = String(row['Station Name'] || '').trim();
+                const staNum = String(row['Sta #'] || '').trim();
+                
+                console.log(`Row ${index}: Station Name: "${stationName}", Sta #: "${staNum}"`);
                 
                 // Skip rows with empty station name or sta #
-                if (!stationName || !staNum) return;
+                if (!stationName || !staNum) {
+                    console.log('Skipping row with empty station name or sta #');
+                    return;
+                }
                 
                 const key = `${stationName}_${staNum}`;
                 if (!stationMap.has(key)) {
@@ -501,7 +545,7 @@
             
             // Show message if no stations found
             if (stations.length === 0) {
-                showError(`No stations found for grade level: ${selectedGrade}. Please check your data.`);
+                showError(`No stations found for grade level: ${selectedGrade}. Please check your data and column names.`);
             }
         }
         
@@ -514,11 +558,39 @@
             }
             
             const [stationName, staNum] = selectedStation.split('|');
+            console.log('Selected station:', stationName, 'Sta #:', staNum);
             
-            // Filter data for selected station
-            filteredData = allData.filter(row => 
-                row['Station Name'] === stationName && row['Sta #'] === staNum
-            );
+            // Filter data for selected station with more robust comparison
+            filteredData = allData.filter(row => {
+                const rowStationName = String(row['Station Name'] || '').trim();
+                const rowStaNum = String(row['Sta #'] || '').trim();
+                const targetStationName = String(stationName || '').trim();
+                const targetStaNum = String(staNum || '').trim();
+                
+                const nameMatch = rowStationName === targetStationName;
+                const staNumMatch = rowStaNum === targetStaNum;
+                
+                console.log('Comparing:', {
+                    rowStationName,
+                    targetStationName,
+                    nameMatch,
+                    rowStaNum,
+                    targetStaNum,
+                    staNumMatch,
+                    bothMatch: nameMatch && staNumMatch
+                });
+                
+                return nameMatch && staNumMatch;
+            });
+            
+            console.log('Filtered data for station:', filteredData);
+            console.log('Number of rows found:', filteredData.length);
+            
+            if (filteredData.length === 0) {
+                showError(`No data found for station: ${stationName} ${staNum}. Please check your data.`);
+                document.getElementById('stationDetailsCard').style.display = 'none';
+                return;
+            }
             
             // Sort by container type
             const containerOrder = ['Main', 'Tote#1', 'Tote#2', 'Tote#3', 'Tote#4', 'Tote#5', 'External'];
