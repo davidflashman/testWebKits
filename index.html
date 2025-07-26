@@ -70,7 +70,7 @@
     </style>
 </head>
 <body>
-            <div class="container">
+    <div class="container">
         <h1 class="text-center mb-4 text-primary">STEM Fest Stations</h1>
         
         <!-- Connection Status -->
@@ -201,45 +201,6 @@
                         <li>Required columns: Station Grade, Station Name, Sta #, Sta Code, Station Color Code, Container Type, Type Item, Station Item, Item Cost, Storage Location, Replenish, Elect, Tablecloth Name</li>
                     </ul>
                 </div>
-                
-                <div class="alert alert-warning">
-                    <strong>Updated Apps Script for better updates:</strong>
-                    <p>Make sure your Google Apps Script <code>updateRow</code> function looks like this:</p>
-                    <pre><code>function updateRow(data, rowIndex) {
-  const SPREADSHEET_ID = '1SIIZyYt5BPORZHbItfa6lRGyHxVNkK4Hp9cTuSgSKTA';
-  const SHEET_NAME = 'MasterStations';
-  
-  try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(SHEET_NAME);
-    
-    // Get headers from row 3
-    const headerRange = sheet.getRange('A3:M3');
-    const headers = headerRange.getValues()[0];
-    
-    // Calculate actual row (add 4 because data starts at row 4, rowIndex is 0-based)
-    const actualRow = rowIndex + 4;
-    
-    console.log('Updating row:', actualRow, 'with data:', data);
-    
-    // Create row data array matching header order
-    const rowData = [];
-    for (let header of headers) {
-      rowData.push(data[header] || '');
-    }
-    
-    // Update the entire row
-    const range = sheet.getRange(actualRow, 1, 1, headers.length);
-    range.setValues([rowData]);
-    
-    return { success: true, message: 'Row updated successfully' };
-    
-  } catch (error) {
-    console.error('Update error:', error);
-    return { success: false, error: error.toString() };
-  }
-}</code></pre>
-                </div>
             </div>
         </div>
     </div>
@@ -328,8 +289,7 @@
         // Configuration
         const SPREADSHEET_ID = '1O6cbCOzu0KNVtmcO68pkDlZRslgj9K-RRk86-rhavOo';
         const SHEET_NAME = 'MasterStations';
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwOdCZNREgQMFuNv7cQz0iQU_Ke1Ugm3OilNbQh3Ch4WVz6Ct37sUqaNohrSw_-qNaj/exec'; // Replace YOUR_SCRIPT_ID with your actual Apps Script ID
-        
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyrnA8Nl8fqWfcZCGRm9fPiBpOj4rA2PxaPkMExlSWKmpvTan3RtDat6R6YchLPlQir/exec'; // Replace YOUR_SCRIPT_ID with your actual Apps Script ID
         // Global variables
         let allData = [];
         let filteredData = [];
@@ -340,7 +300,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             editModal = new bootstrap.Modal(document.getElementById('editModal'));
             setupEventListeners();
-            // Don't auto-load data - let user test connection first
         });
         
         function setupEventListeners() {
@@ -367,7 +326,6 @@
             `;
             document.querySelector('.container').insertAdjacentHTML('afterbegin', alertHtml);
             
-            // Auto-dismiss after 5 seconds
             setTimeout(() => {
                 const alert = document.querySelector('.alert');
                 if (alert) {
@@ -385,7 +343,6 @@
             `;
             document.querySelector('.container').insertAdjacentHTML('afterbegin', alertHtml);
             
-            // Auto-dismiss after 3 seconds
             setTimeout(() => {
                 const alert = document.querySelector('.alert-success');
                 if (alert) {
@@ -397,7 +354,6 @@
         function showSuccessModal(message) {
             console.log('showSuccessModal called with message:', message);
             
-            // Create and show Bootstrap modal for success
             const modalHtml = `
                 <div class="modal fade" id="successModal" tabindex="-1">
                     <div class="modal-dialog modal-dialog-centered">
@@ -422,34 +378,24 @@
                 </div>
             `;
             
-            // Remove any existing success modal
             const existingModal = document.getElementById('successModal');
             if (existingModal) {
-                console.log('Removing existing modal');
                 existingModal.remove();
             }
             
-            // Add the new modal to the page
             document.body.insertAdjacentHTML('beforeend', modalHtml);
-            console.log('Modal HTML added to page');
-            
-            // Show the modal
             const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-            console.log('Showing modal...');
             successModal.show();
             
-            // Auto-dismiss after 5 seconds (increased time)
             setTimeout(() => {
-                console.log('Auto-dismissing modal');
                 successModal.hide();
                 setTimeout(() => {
                     const modalElement = document.getElementById('successModal');
                     if (modalElement) {
                         modalElement.remove();
-                        console.log('Modal removed from DOM');
                     }
                 }, 500);
-            }, 5000);
+            }, 3000);
         }
         
         function showLoading(show = true) {
@@ -480,7 +426,6 @@
                     showError('Connection failed: ' + (response?.error || 'Unknown error. Please check your Apps Script setup.'));
                 }
                 
-                // Cleanup
                 delete window[callbackName];
                 const script = document.querySelector(`script[src*="${callbackName}"]`);
                 if (script) document.head.removeChild(script);
@@ -510,16 +455,13 @@
             console.log('Total rows:', allData.length);
             console.log('First 5 rows:', allData.slice(0, 5));
             
-            // Check column names
             if (allData.length > 0) {
                 const firstRow = allData[0];
                 console.log('Available columns:', Object.keys(firstRow));
                 
-                // Check grade values
                 const gradeValues = [...new Set(allData.map(row => String(row['Station Grade'] || '').trim()))].filter(Boolean);
                 console.log('Unique Grade Values:', gradeValues);
                 
-                // Check station names for each grade
                 gradeValues.forEach(grade => {
                     const gradeRows = allData.filter(row => String(row['Station Grade'] || '').trim() === grade);
                     const stations = [...new Set(gradeRows.map(row => {
@@ -537,7 +479,6 @@
         function loadData() {
             showLoading(true);
             
-            // Create JSONP callback
             const callbackName = 'jsonpCallback' + Date.now();
             window[callbackName] = function(response) {
                 showLoading(false);
@@ -550,18 +491,15 @@
                 console.log('All data loaded:', allData);
                 console.log('Total rows:', allData.length);
                 
-                // Log unique grade levels for debugging
                 const grades = [...new Set(allData.map(row => row['Station Grade']))].filter(Boolean);
                 console.log('Available grade levels:', grades);
                 
                 populateGradeDropdown();
                 
-                // Cleanup
                 delete window[callbackName];
                 document.head.removeChild(script);
             };
             
-            // Create script tag for JSONP
             const script = document.createElement('script');
             script.src = `${WEB_APP_URL}?action=getData&callback=${callbackName}`;
             script.onerror = function() {
@@ -575,8 +513,6 @@
         }
         
         function populateGradeDropdown() {
-            // Grade dropdown is static, so no need to populate from data
-            // But we can enable it now that data is loaded
             document.getElementById('gradeDropdown').disabled = false;
         }
         
@@ -591,7 +527,6 @@
                 return;
             }
             
-            // Filter data by grade with robust comparison
             const gradeFilteredData = allData.filter(row => {
                 const stationGrade = String(row['Station Grade'] || '').trim();
                 const targetGrade = String(selectedGrade || '').trim();
@@ -602,7 +537,6 @@
             console.log('Filtered data for grade:', gradeFilteredData);
             console.log('Number of rows for this grade:', gradeFilteredData.length);
             
-            // Get unique stations using Map to avoid duplicates
             const stationMap = new Map();
             gradeFilteredData.forEach((row, index) => {
                 const stationName = String(row['Station Name'] || '').trim();
@@ -610,7 +544,6 @@
                 
                 console.log(`Row ${index}: Station Name: "${stationName}", Sta #: "${staNum}"`);
                 
-                // Skip rows with empty station name or sta #
                 if (!stationName || !staNum) {
                     console.log('Skipping row with empty station name or sta #');
                     return;
@@ -628,10 +561,8 @@
             const stations = Array.from(stationMap.values());
             console.log('Unique stations found:', stations);
             
-            // Populate station dropdown
             stationDropdown.innerHTML = '<option value="">Select a Station</option>';
             
-            // Sort stations alphabetically by name
             stations.sort((a, b) => a.name.localeCompare(b.name));
             
             stations.forEach(station => {
@@ -644,7 +575,6 @@
             stationDropdown.disabled = false;
             document.getElementById('stationDetailsCard').style.display = 'none';
             
-            // Show message if no stations found
             if (stations.length === 0) {
                 showError(`No stations found for grade level: ${selectedGrade}. Please check your data and column names.`);
             }
@@ -661,7 +591,6 @@
             const [stationName, staNum] = selectedStation.split('|');
             console.log('Selected station:', stationName, 'Sta #:', staNum);
             
-            // Filter data for selected station with more robust comparison
             filteredData = allData.filter(row => {
                 const rowStationName = String(row['Station Name'] || '').trim();
                 const rowStaNum = String(row['Sta #'] || '').trim();
@@ -693,7 +622,6 @@
                 return;
             }
             
-            // Sort by container type
             const containerOrder = ['Main', 'Tote#1', 'Tote#2', 'Tote#3', 'Tote#4', 'Tote#5', 'External'];
             filteredData.sort((a, b) => {
                 const aIndex = containerOrder.indexOf(a['Container Type']);
@@ -756,7 +684,6 @@
             currentEditingRow = index;
             const row = filteredData[index];
             
-            // Populate form
             document.getElementById('editStaCode').value = row['Sta Code'] || '';
             document.getElementById('editStationColorCode').value = row['Station Color Code'] || '';
             document.getElementById('editContainerType').value = row['Container Type'] || '';
@@ -775,7 +702,9 @@
         function deleteRow(index) {
             if (confirm('Are you sure you want to delete this row?')) {
                 const row = filteredData[index];
-                sendDataToSheet('delete', row, index);
+                const actualRowIndex = findActualRowIndex(row);
+                console.log('Deleting row at filtered index:', index, 'actual index:', actualRowIndex);
+                sendDataToSheet('delete', row, actualRowIndex);
             }
         }
         
@@ -787,10 +716,7 @@
             }
             
             currentEditingRow = null;
-            
-            // Clear form
             document.getElementById('editForm').reset();
-            
             document.getElementById('modalTitle').textContent = 'Add New Row';
             editModal.show();
         }
@@ -809,7 +735,6 @@
                 'Tablecloth Name': document.getElementById('editTableclothName').value
             };
             
-            // Add station info for new rows or preserve existing for updates
             if (currentEditingRow === null) {
                 // Adding new row
                 const selectedStation = document.getElementById('stationDropdown').value;
@@ -819,56 +744,58 @@
                 formData['Station Name'] = stationName;
                 formData['Sta #'] = staNum;
                 formData['Station Grade'] = selectedGrade;
+                
+                console.log('Adding new row with data:', formData);
+                sendDataToSheet('add', formData, null);
             } else {
-                // Updating existing row - preserve original station info
+                // Updating existing row
                 const originalRow = filteredData[currentEditingRow];
                 formData['Station Name'] = originalRow['Station Name'];
                 formData['Sta #'] = originalRow['Sta #'];
                 formData['Station Grade'] = originalRow['Station Grade'];
                 
-                // Find the actual row index in allData for updates
-                const actualRowIndex = allData.findIndex(row => 
-                    String(row['Station Name'] || '').trim() === String(originalRow['Station Name'] || '').trim() &&
-                    String(row['Sta #'] || '').trim() === String(originalRow['Sta #'] || '').trim() &&
-                    String(row['Sta Code'] || '').trim() === String(originalRow['Sta Code'] || '').trim() &&
-                    String(row['Container Type'] || '').trim() === String(originalRow['Container Type'] || '').trim()
-                );
+                const actualRowIndex = findActualRowIndex(originalRow);
+                console.log('Updating row at filtered index:', currentEditingRow, 'actual index:', actualRowIndex);
+                console.log('Update data:', formData);
                 
-                console.log('Original row:', originalRow);
-                console.log('Found actual row index in allData:', actualRowIndex);
+                sendDataToSheet('update', formData, actualRowIndex);
             }
-            
-            const action = currentEditingRow === null ? 'add' : 'update';
-            const rowIndex = currentEditingRow === null ? null : findActualRowIndex(filteredData[currentEditingRow]);
-            
-            console.log('Saving with action:', action, 'rowIndex:', rowIndex, 'formData:', formData);
-            
-            sendDataToSheet(action, formData, rowIndex);
         }
         
         function findActualRowIndex(targetRow) {
-            // Find the actual index in allData for the row we want to update
-            return allData.findIndex(row => 
+            // Find the actual index in allData for the row we want to update/delete
+            const index = allData.findIndex(row => 
                 String(row['Station Name'] || '').trim() === String(targetRow['Station Name'] || '').trim() &&
                 String(row['Sta #'] || '').trim() === String(targetRow['Sta #'] || '').trim() &&
                 String(row['Sta Code'] || '').trim() === String(targetRow['Sta Code'] || '').trim() &&
                 String(row['Container Type'] || '').trim() === String(targetRow['Container Type'] || '').trim() &&
                 String(row['Station Item'] || '').trim() === String(targetRow['Station Item'] || '').trim()
             );
+            console.log('Finding actual row index for:', targetRow);
+            console.log('Found at index:', index);
+            return index;
         }
         
         function sendDataToSheet(action, data, rowIndex = null) {
             console.log('sendDataToSheet called with:', { action, data, rowIndex });
             showLoading(true);
             
+            // Disable save button to prevent double-clicks
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            
             const callbackName = 'jsonpCallback' + Date.now();
             window[callbackName] = function(response) {
                 console.log('Response received:', response);
                 showLoading(false);
                 
+                // Re-enable save button
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+                
                 if (response && response.success) {
                     console.log('Success! Showing modal...');
-                    // Show Bootstrap success message
                     showSuccessModal(getSuccessMessage(action));
                     editModal.hide();
                     
@@ -880,10 +807,13 @@
                             const currentGrade = document.getElementById('gradeDropdown').value;
                             const currentStation = document.getElementById('stationDropdown').value;
                             if (currentGrade) {
-                                // Re-trigger the station selection to refresh the display
-                                if (currentStation) {
-                                    handleStationChange();
-                                }
+                                document.getElementById('gradeDropdown').dispatchEvent(new Event('change'));
+                                setTimeout(() => {
+                                    if (currentStation) {
+                                        document.getElementById('stationDropdown').value = currentStation;
+                                        document.getElementById('stationDropdown').dispatchEvent(new Event('change'));
+                                    }
+                                }, 200);
                             }
                         }, 500);
                     }, 100);
@@ -898,33 +828,31 @@
                 if (scriptEl) document.head.removeChild(scriptEl);
             };
             
-            // Prepare data for transmission
-            const postData = {
-                action: action,
-                data: data,
-                rowIndex: rowIndex,
-                spreadsheetId: SPREADSHEET_ID,
-                sheetName: SHEET_NAME
-            };
+            // Build URL parameters properly
+            let url = `${WEB_APP_URL}?action=${encodeURIComponent(action)}&callback=${callbackName}`;
             
-            console.log('Sending data:', postData);
+            if (data) {
+                url += `&data=${encodeURIComponent(JSON.stringify(data))}`;
+            }
             
-            // Create script tag for JSONP POST
+            if (rowIndex !== null && rowIndex !== undefined) {
+                url += `&rowIndex=${encodeURIComponent(rowIndex)}`;
+            }
+            
+            console.log('Request URL:', url);
+            
             const script = document.createElement('script');
-            const queryString = Object.keys(postData).map(key => 
-                encodeURIComponent(key) + '=' + encodeURIComponent(JSON.stringify(postData[key]))
-            ).join('&');
-            
-            script.src = `${WEB_APP_URL}?${queryString}&callback=${callbackName}`;
+            script.src = url;
             script.onerror = function() {
                 console.log('Script error occurred');
                 showLoading(false);
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
                 showError('Connection failed. Please check your internet connection and try again.');
                 delete window[callbackName];
                 document.head.removeChild(script);
             };
             
-            console.log('Script URL:', script.src);
             document.head.appendChild(script);
         }
         
