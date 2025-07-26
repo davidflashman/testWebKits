@@ -76,8 +76,9 @@
         <!-- Connection Status -->
         <div class="card mb-3" id="connectionStatus">
             <div class="card-body text-center">
-                <button id="testConnectionBtn" class="btn btn-info">Test Connection</button>
-                <small class="text-muted d-block mt-2">Click to test your Google Sheets connection</small>
+                <button id="testConnectionBtn" class="btn btn-info me-2">Test Connection</button>
+                <button id="loadDataBtn" class="btn btn-success">Load Data</button>
+                <small class="text-muted d-block mt-2">Test connection first, then load data</small>
             </div>
         </div>
         
@@ -184,7 +185,7 @@
                     <li><strong>Test Connection:</strong>
                         <ul>
                             <li>Click the "Test Connection" button above</li>
-                            <li>If successful, the connection status will disappear, and you can use the app</li>
+                            <li>If successful, the connection status will disappear and you can use the app</li>
                         </ul>
                     </li>
                 </ol>
@@ -283,7 +284,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Configuration
+    // Configuration
         const SPREADSHEET_ID = '1O6cbCOzu0KNVtmcO68pkDlZRslgj9K-RRk86-rhavOo';
         const SHEET_NAME = 'MasterStations';
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzX2FRdeXQt2ZJ_BTOSPnbKECAnD_byccGrAbE_q0ROW8z3wENdd3t2attfEAhcRwtX/exec'; // Replace YOUR_SCRIPT_ID with your actual Apps Script ID
@@ -307,6 +308,9 @@
             document.getElementById('addRowBtn').addEventListener('click', handleAddRow);
             document.getElementById('saveBtn').addEventListener('click', handleSave);
             document.getElementById('testConnectionBtn').addEventListener('click', testConnection);
+            document.getElementById('loadDataBtn').addEventListener('click', function() {
+                loadData();
+            });
         }
         
         function showError(message) {
@@ -346,7 +350,7 @@
         }
         
         function showLoading(show = true) {
-            document.getElementById('loadingIndicator').style.display = show ? 'block': 'none';
+            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
         }
         
         function testConnection() {
@@ -406,6 +410,13 @@
                 }
                 
                 allData = response.data || [];
+                console.log('All data loaded:', allData);
+                console.log('Total rows:', allData.length);
+                
+                // Log unique grade levels for debugging
+                const grades = [...new Set(allData.map(row => row['Station Grade']))].filter(Boolean);
+                console.log('Available grade levels:', grades);
+                
                 populateGradeDropdown();
                 
                 // Cleanup
@@ -443,29 +454,41 @@
                 return;
             }
             
-            // Filter data by grade and get unique stations
-            const gradeFilteredData = allData.filter(row => row['Station Grade'] === selectedGrade);
-            const uniqueStations = [...new Set(gradeFilteredData.map(row => ({
-                name: row['Station Name'],
-                staNum: row['Sta #']
-            })))];
+            // Filter data by grade
+            const gradeFilteredData = allData.filter(row => {
+                const stationGrade = row['Station Grade'];
+                return stationGrade === selectedGrade;
+            });
             
-            // Remove duplicates based on both name and sta#
+            console.log('Filtered data for grade:', selectedGrade, gradeFilteredData);
+            
+            // Get unique stations using Map to avoid duplicates
             const stationMap = new Map();
             gradeFilteredData.forEach(row => {
-                const key = `${row['Station Name']}_${row['Sta #']}`;
+                const stationName = row['Station Name'];
+                const staNum = row['Sta #'];
+                
+                // Skip rows with empty station name or sta #
+                if (!stationName || !staNum) return;
+                
+                const key = `${stationName}_${staNum}`;
                 if (!stationMap.has(key)) {
                     stationMap.set(key, {
-                        name: row['Station Name'],
-                        staNum: row['Sta #']
+                        name: stationName,
+                        staNum: staNum
                     });
                 }
             });
             
             const stations = Array.from(stationMap.values());
+            console.log('Unique stations found:', stations);
             
             // Populate station dropdown
             stationDropdown.innerHTML = '<option value="">Select a Station</option>';
+            
+            // Sort stations alphabetically by name
+            stations.sort((a, b) => a.name.localeCompare(b.name));
+            
             stations.forEach(station => {
                 const option = document.createElement('option');
                 option.value = `${station.name}|${station.staNum}`;
@@ -475,6 +498,11 @@
             
             stationDropdown.disabled = false;
             document.getElementById('stationDetailsCard').style.display = 'none';
+            
+            // Show message if no stations found
+            if (stations.length === 0) {
+                showError(`No stations found for grade level: ${selectedGrade}. Please check your data.`);
+            }
         }
         
         function handleStationChange() {
