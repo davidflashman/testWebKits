@@ -73,16 +73,7 @@
     <div class="container">
         <h1 class="text-center mb-4 text-primary">STEM Fest Stations</h1>
         
-        <!-- Connection Status -->
-        <div class="card mb-3" id="connectionStatus">
-            <div class="card-body text-center">
-                <button id="testConnectionBtn" class="btn btn-info me-2">Test Connection</button>
-                <button id="loadDataBtn" class="btn btn-success me-2">Load Data</button>
-                <button id="debugDataBtn" class="btn btn-warning me-2">Debug Data</button>
-                <button id="testModalBtn" class="btn btn-secondary">Test Modal</button>
-                <small class="text-muted d-block mt-2">Test connection first, then load data</small>
-            </div>
-        </div>
+
         
         <!-- Dropdown 1: Grade Selection -->
         <div class="card mb-3">
@@ -286,7 +277,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Configuration
        // Configuration
         const SPREADSHEET_ID = '1O6cbCOzu0KNVtmcO68pkDlZRslgj9K-RRk86-rhavOo';
         const SHEET_NAME = 'MasterStations';
@@ -302,6 +292,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             editModal = new bootstrap.Modal(document.getElementById('editModal'));
             setupEventListeners();
+            // Auto-load data when page opens
+            loadData();
         });
         
         function setupEventListeners() {
@@ -309,31 +301,58 @@
             document.getElementById('stationDropdown').addEventListener('change', handleStationChange);
             document.getElementById('addRowBtn').addEventListener('click', handleAddRow);
             document.getElementById('saveBtn').addEventListener('click', handleSave);
-            document.getElementById('testConnectionBtn').addEventListener('click', testConnection);
-            document.getElementById('loadDataBtn').addEventListener('click', function() {
-                loadData();
-            });
-            document.getElementById('debugDataBtn').addEventListener('click', debugData);
-            document.getElementById('testModalBtn').addEventListener('click', function() {
-                showSuccessModal('Test modal is working!');
-            });
+        }
+        
+        function showErrorModal(title, message) {
+            console.log('showErrorModal called with:', title, message);
+            
+            const modalHtml = `
+                <div class="modal fade" id="errorModal" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title">
+                                    ⚠️ ${title}
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body text-center">
+                                <div class="mb-3">
+                                    <div class="text-danger" style="font-size: 3rem;">⚠️</div>
+                                </div>
+                                <h6>${message}</h6>
+                            </div>
+                            <div class="modal-footer justify-content-center">
+                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const existingModal = document.getElementById('errorModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
+            
+            // Auto-dismiss after 8 seconds for errors (longer than success)
+            setTimeout(() => {
+                errorModal.hide();
+                setTimeout(() => {
+                    const modalElement = document.getElementById('errorModal');
+                    if (modalElement) {
+                        modalElement.remove();
+                    }
+                }, 500);
+            }, 8000);
         }
         
         function showError(message) {
-            const alertHtml = `
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <strong>Error:</strong> ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-            document.querySelector('.container').insertAdjacentHTML('afterbegin', alertHtml);
-            
-            setTimeout(() => {
-                const alert = document.querySelector('.alert');
-                if (alert) {
-                    alert.remove();
-                }
-            }, 5000);
+            showErrorModal('Error', message);
         }
         
         function showSuccess(message) {
@@ -404,29 +423,43 @@
             document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
         }
         
-        function testConnection() {
+        function loadData() {
             if (WEB_APP_URL.includes('YOUR_SCRIPT_ID')) {
-                showError('Please update the WEB_APP_URL with your Google Apps Script deployment URL. See setup instructions below.');
+                showErrorModal('Configuration Error', 'Please update the WEB_APP_URL with your Google Apps Script deployment URL. Check the setup instructions below.');
                 return;
             }
             
             showLoading(true);
-            const testBtn = document.getElementById('testConnectionBtn');
-            testBtn.disabled = true;
-            testBtn.textContent = 'Testing...';
             
-            const callbackName = 'testCallback' + Date.now();
+            const callbackName = 'jsonpCallback' + Date.now();
             window[callbackName] = function(response) {
                 showLoading(false);
-                testBtn.disabled = false;
-                testBtn.textContent = 'Test Connection';
-                
-                if (response && (response.success !== false)) {
-                    showSuccess('Connection successful! Google Sheets is accessible.');
-                    document.getElementById('connectionStatus').style.display = 'none';
-                } else {
-                    showError('Connection failed: ' + (response?.error || 'Unknown error. Please check your Apps Script setup.'));
+                if (response.error) {
+                    showErrorModal('Data Loading Failed', 'Failed to load data from Google Sheets: ' + response.error);
+                    return;
                 }
+                
+                allData = response.data || [];
+                console.log('All data loaded:', allData);
+                console.log('Total rows:', allData.length);
+                
+                if (allData.length === 0) {
+                    showErrorModal('No Data Found', 'No data was found in your Google Sheet. Please check that your sheet has data starting from row 4 and the sheet name is "MasterStations".');
+                    return;
+                }
+                
+                const grades = [...new Set(allData.map(row => row['Station Grade']))].filter(Boolean);
+                console.log('Available grade levels:', grades);
+                
+                if (grades.length === 0) {
+                    showErrorModal('Invalid Data Structure', 'No valid grade levels found in your data. Please check that the "Station Grade" column has data.');
+                    return;
+                }
+                
+                populateGradeDropdown();
+                
+                // Show success for initial load
+                showSuccess('Data loaded successfully! Found ' + allData.length + ' records.');
                 
                 delete window[callbackName];
                 const script = document.querySelector(`script[src*="${callbackName}"]`);
@@ -437,76 +470,7 @@
             script.src = `${WEB_APP_URL}?action=getData&callback=${callbackName}`;
             script.onerror = function() {
                 showLoading(false);
-                testBtn.disabled = false;
-                testBtn.textContent = 'Test Connection';
-                showError('Connection failed. Please verify your Apps Script URL and deployment settings.');
-                delete window[callbackName];
-                document.head.removeChild(script);
-            };
-            
-            document.head.appendChild(script);
-        }
-        
-        function debugData() {
-            if (!allData || allData.length === 0) {
-                showError('No data loaded. Please load data first.');
-                return;
-            }
-            
-            console.log('=== DEBUG DATA ===');
-            console.log('Total rows:', allData.length);
-            console.log('First 5 rows:', allData.slice(0, 5));
-            
-            if (allData.length > 0) {
-                const firstRow = allData[0];
-                console.log('Available columns:', Object.keys(firstRow));
-                
-                const gradeValues = [...new Set(allData.map(row => String(row['Station Grade'] || '').trim()))].filter(Boolean);
-                console.log('Unique Grade Values:', gradeValues);
-                
-                gradeValues.forEach(grade => {
-                    const gradeRows = allData.filter(row => String(row['Station Grade'] || '').trim() === grade);
-                    const stations = [...new Set(gradeRows.map(row => {
-                        const name = String(row['Station Name'] || '').trim();
-                        const num = String(row['Sta #'] || '').trim();
-                        return `${name} ${num}`;
-                    }))].filter(station => station.trim() !== ' ');
-                    console.log(`Grade "${grade}" stations:`, stations);
-                });
-            }
-            
-            showSuccess('Debug information logged to console. Press F12 to view.');
-        }
-        
-        function loadData() {
-            showLoading(true);
-            
-            const callbackName = 'jsonpCallback' + Date.now();
-            window[callbackName] = function(response) {
-                showLoading(false);
-                if (response.error) {
-                    showError('Failed to load data: ' + response.error);
-                    return;
-                }
-                
-                allData = response.data || [];
-                console.log('All data loaded:', allData);
-                console.log('Total rows:', allData.length);
-                
-                const grades = [...new Set(allData.map(row => row['Station Grade']))].filter(Boolean);
-                console.log('Available grade levels:', grades);
-                
-                populateGradeDropdown();
-                
-                delete window[callbackName];
-                document.head.removeChild(script);
-            };
-            
-            const script = document.createElement('script');
-            script.src = `${WEB_APP_URL}?action=getData&callback=${callbackName}`;
-            script.onerror = function() {
-                showLoading(false);
-                showError('Connection failed. Please check your internet connection and try again.');
+                showErrorModal('Connection Failed', 'Unable to connect to Google Sheets. Please check:<br/>• Your internet connection<br/>• Google Apps Script deployment URL<br/>• Apps Script permissions');
                 delete window[callbackName];
                 document.head.removeChild(script);
             };
@@ -809,7 +773,7 @@
                     refreshCurrentView(currentGrade, currentStation);
                 } else {
                     console.log('Error in response:', response);
-                    showError('Operation failed: ' + (response?.error || 'Unknown error'));
+                    showErrorModal('Save Failed', 'Operation failed: ' + (response?.error || 'Unknown error occurred while saving.'));
                 }
                 
                 // Cleanup
@@ -838,7 +802,7 @@
                 showLoading(false);
                 saveBtn.disabled = false;
                 saveBtn.textContent = 'Save';
-                showError('Connection failed. Please check your internet connection and try again.');
+                showErrorModal('Connection Failed', 'Unable to connect to Google Sheets. Please check your internet connection and try again.');
                 delete window[callbackName];
                 document.head.removeChild(script);
             };
@@ -866,7 +830,7 @@
                 }
                 
                 if (response.error) {
-                    showError('Failed to refresh data: ' + response.error);
+                    showErrorModal('Refresh Failed', 'Failed to refresh data: ' + response.error);
                     return;
                 }
                 
@@ -908,7 +872,7 @@
                     tableContainer.style.opacity = '1';
                     tableContainer.style.pointerEvents = 'auto';
                 }
-                showError('Failed to refresh data. Please reload manually.');
+                showErrorModal('Refresh Failed', 'Failed to refresh data. Please try reloading the page.');
                 delete window[callbackName];
                 document.head.removeChild(script);
             };
