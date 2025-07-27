@@ -6,14 +6,6 @@
     <title>STEM Fest Stations</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body {<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STEM Fest Stations</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <style>
         body {
             background-color: #f8f9fa;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -150,732 +142,57 @@
             </div>
             <p>Loading data...</p>
         </div>
-    </div>
 
-    <!-- Edit/Add Modal -->
-    <div class="modal fade" id="editModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle">Edit Row</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editForm">
-                        <div class="row">
-                            <div class="col-md-6 form-row">
-                                <label for="editStaCode" class="form-label">Sta Code</label>
-                                <input type="text" class="form-control" id="editStaCode" required>
-                            </div>
-                            <div class="col-md-6 form-row">
-                                <label for="editStationColorCode" class="form-label">Station Color Code</label>
-                                <input type="text" class="form-control" id="editStationColorCode">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 form-row">
-                                <label for="editContainerType" class="form-label">Container Type</label>
-                                <select class="form-select" id="editContainerType" required>
-                                    <option value="">Select Container Type</option>
-                                    <option value="Main">Main</option>
-                                    <option value="Tote#1">Tote#1</option>
-                                    <option value="Tote#2">Tote#2</option>
-                                    <option value="Tote#3">Tote#3</option>
-                                    <option value="Tote#4">Tote#4</option>
-                                    <option value="Tote#5">Tote#5</option>
-                                    <option value="External">External</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 form-row">
-                                <label for="editTypeItem" class="form-label">Type Item</label>
-                                <input type="text" class="form-control" id="editTypeItem">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 form-row">
-                                <label for="editStationItem" class="form-label">Station Item</label>
-                                <input type="text" class="form-control" id="editStationItem">
-                            </div>
-                            <div class="col-md-6 form-row">
-                                <label for="editItemCost" class="form-label">Item Cost</label>
-                                <input type="text" class="form-control" id="editItemCost">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 form-row">
-                                <label for="editStorageLocation" class="form-label">Storage Location</label>
-                                <input type="text" class="form-control" id="editStorageLocation">
-                            </div>
-                            <div class="col-md-6 form-row">
-                                <label for="editReplenish" class="form-label">Replenish</label>
-                                <input type="text" class="form-control" id="editReplenish">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 form-row">
-                                <label for="editElect" class="form-label">Elect</label>
-                                <input type="text" class="form-control" id="editElect">
-                            </div>
-                            <div class="col-md-6 form-row">
-                                <label for="editTableclothName" class="form-label">Tablecloth Name</label>
-                                <input type="text" class="form-control" id="editTableclothName">
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="saveBtn">Save</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script>
-       // Configuration
-        const SPREADSHEET_ID = '1O6cbCOzu0KNVtmcO68pkDlZRslgj9K-RRk86-rhavOo';
-        const SHEET_NAME = 'MasterStations';
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyrnA8Nl8fqWfcZCGRm9fPiBpOj4rA2PxaPkMExlSWKmpvTan3RtDat6R6YchLPlQir/exec'; // Replace YOUR_SCRIPT_ID with your actual Apps Script ID
-        
-        // Global variables
-        let allData = [];
-        let filteredData = [];
-        let currentEditingRow = null;
-        let editModal;
-        
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            editModal = new bootstrap.Modal(document.getElementById('editModal'));
-            setupEventListeners();
-            // Auto-load data when page opens
-            loadData();
-        });
-        
-        function setupEventListeners() {
-            document.getElementById('gradeDropdown').addEventListener('change', handleGradeChange);
-            document.getElementById('stationDropdown').addEventListener('change', handleStationChange);
-            document.getElementById('addRowBtn').addEventListener('click', handleAddRow);
-            document.getElementById('saveBtn').addEventListener('click', handleSave);
-        }
-        
-        function showErrorModal(title, message) {
-            console.log('showErrorModal called with:', title, message);
-            
-            const modalHtml = `
-                <div class="modal fade" id="errorModal" tabindex="-1">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header bg-danger text-white">
-                                <h5 class="modal-title">
-                                    ⚠️ ${title}
-                                </h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body text-center">
-                                <div class="mb-3">
-                                    <div class="text-danger" style="font-size: 3rem;">⚠️</div>
-                                </div>
-                                <h6>${message}</h6>
-                            </div>
-                            <div class="modal-footer justify-content-center">
-                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            const existingModal = document.getElementById('errorModal');
-            if (existingModal) {
-                existingModal.remove();
-            }
-            
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-            errorModal.show();
-            
-            // Auto-dismiss after 8 seconds for errors (longer than success)
-            setTimeout(() => {
-                errorModal.hide();
-                setTimeout(() => {
-                    const modalElement = document.getElementById('errorModal');
-                    if (modalElement) {
-                        modalElement.remove();
-                    }
-                }, 500);
-            }, 8000);
-        }
-        
-        function showError(message) {
-            showErrorModal('Error', message);
-        }
-        
-        function showSuccess(message) {
-            const alertHtml = `
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <strong>Success:</strong> ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-            document.querySelector('.container').insertAdjacentHTML('afterbegin', alertHtml);
-            
-            setTimeout(() => {
-                const alert = document.querySelector('.alert-success');
-                if (alert) {
-                    alert.remove();
-                }
-            }, 3000);
-        }
-        
-        function showSuccessModal(message) {
-            console.log('showSuccessModal called with message:', message);
-            
-            const modalHtml = `
-                <div class="modal fade" id="successModal" tabindex="-1">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header bg-success text-white">
-                                <h5 class="modal-title">
-                                    ✓ Success
-                                </h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body text-center">
-                                <div class="mb-3">
-                                    <div class="text-success" style="font-size: 3rem;">✓</div>
-                                </div>
-                                <h6>${message}</h6>
-                            </div>
-                            <div class="modal-footer justify-content-center">
-                                <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            const existingModal = document.getElementById('successModal');
-            if (existingModal) {
-                existingModal.remove();
-            }
-            
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-            successModal.show();
-            
-            setTimeout(() => {
-                successModal.hide();
-                setTimeout(() => {
-                    const modalElement = document.getElementById('successModal');
-                    if (modalElement) {
-                        modalElement.remove();
-                    }
-                }, 500);
-            }, 3000);
-        }
-        
-        function showLoading(show = true) {
-            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
-        }
-        
-        function loadData() {
-            if (WEB_APP_URL.includes('YOUR_SCRIPT_ID')) {
-                showErrorModal('Configuration Error', 'Please update the WEB_APP_URL with your Google Apps Script deployment URL.');
-                return;
-            }
-            
-            showLoading(true);
-            
-            const callbackName = 'jsonpCallback' + Date.now();
-            window[callbackName] = function(response) {
-                showLoading(false);
-                if (response.error) {
-                    showErrorModal('Data Loading Failed', 'Failed to load data from Google Sheets: ' + response.error);
-                    return;
-                }
-                
-                allData = response.data || [];
-                console.log('All data loaded:', allData);
-                console.log('Total rows:', allData.length);
-                
-                if (allData.length === 0) {
-                    showErrorModal('No Data Found', 'No data was found in your Google Sheet. Please check that your sheet has data starting from row 4 and the sheet name is "MasterStations".');
-                    return;
-                }
-                
-                const grades = [...new Set(allData.map(row => row['Station Grade']))].filter(Boolean);
-                console.log('Available grade levels:', grades);
-                
-                if (grades.length === 0) {
-                    showErrorModal('Invalid Data Structure', 'No valid grade levels found in your data. Please check that the "Station Grade" column has data.');
-                    return;
-                }
-                
-                populateGradeDropdown();
-                
-                // Show success for initial load
-                showSuccess('Data loaded successfully! Found ' + allData.length + ' records.');
-                
-                delete window[callbackName];
-                const script = document.querySelector(`script[src*="${callbackName}"]`);
-                if (script) document.head.removeChild(script);
-            };
-            
-            const script = document.createElement('script');
-            script.src = `${WEB_APP_URL}?action=getData&callback=${callbackName}`;
-            script.onerror = function() {
-                showLoading(false);
-                showErrorModal('Connection Failed', 'Unable to connect to Google Sheets. Please check:<br/>• Your internet connection<br/>• Google Apps Script deployment URL<br/>• Apps Script permissions');
-                delete window[callbackName];
-                document.head.removeChild(script);
-            };
-            
-            document.head.appendChild(script);
-        }
-        
-        function populateGradeDropdown() {
-            document.getElementById('gradeDropdown').disabled = false;
-        }
-        
-        function handleGradeChange() {
-            const selectedGrade = document.getElementById('gradeDropdown').value;
-            const stationDropdown = document.getElementById('stationDropdown');
-            
-            console.log('=== GRADE CHANGE DEBUG ===');
-            console.log('Selected grade:', selectedGrade);
-            console.log('All data length:', allData.length);
-            console.log('Sample data:', allData.slice(0, 2));
-            
-            if (!selectedGrade) {
-                stationDropdown.innerHTML = '<option value="">Select a Station</option>';
-                stationDropdown.disabled = true;
-                document.getElementById('stationDetailsCard').style.display = 'none';
-                return;
-            }
-            
-            // Check if data is loaded
-            if (!allData || allData.length === 0) {
-                console.log('ERROR: No data loaded yet');
-                showError('Data not loaded yet. Please wait for data to load first.');
-                return;
-            }
-            
-            // Debug the column names in your data
-            if (allData.length > 0) {
-                console.log('Available columns:', Object.keys(allData[0]));
-            }
-            
-            const gradeFilteredData = allData.filter(row => {
-                const stationGrade = String(row['Station Grade'] || '').trim();
-                const targetGrade = String(selectedGrade || '').trim();
-                console.log(`Comparing: "${stationGrade}" === "${targetGrade}"`, stationGrade === targetGrade);
-                return stationGrade === targetGrade;
-            });
-            
-            console.log('Selected grade:', selectedGrade);
-            console.log('Filtered data for grade:', gradeFilteredData);
-            console.log('Number of rows for this grade:', gradeFilteredData.length);
-            
-            if (gradeFilteredData.length === 0) {
-                console.log('No data found for grade:', selectedGrade);
-                showError(`No data found for grade level: ${selectedGrade}. Available grades: ${[...new Set(allData.map(row => row['Station Grade']))].join(', ')}`);
-                stationDropdown.disabled = true;
-                return;
-            }
-            
-            const stationMap = new Map();
-            gradeFilteredData.forEach((row, index) => {
-                const stationName = String(row['Station Name'] || '').trim();
-                const staNum = String(row['Sta #'] || '').trim();
-                
-                console.log(`Row ${index}: Station Name: "${stationName}", Sta #: "${staNum}"`);
-                
-                if (!stationName || !staNum) {
-                    console.log('Skipping row with empty station name or sta #');
-                    return;
-                }
-                
-                const key = `${stationName}_${staNum}`;
-                if (!stationMap.has(key)) {
-                    stationMap.set(key, {
-                        name: stationName,
-                        staNum: staNum
-                    });
-                }
-            });
-            
-            const stations = Array.from(stationMap.values());
-            console.log('Unique stations found:', stations);
-            
-            // Clear and populate dropdown
-            stationDropdown.innerHTML = '<option value="">Select a Station</option>';
-            
-            stations.sort((a, b) => a.name.localeCompare(b.name));
-            
-            stations.forEach(station => {
-                const option = document.createElement('option');
-                option.value = `${station.name}|${station.staNum}`;
-                option.textContent = `${station.name} ${station.staNum}`;
-                stationDropdown.appendChild(option);
-            });
-            
-            // Force enable the dropdown
-            stationDropdown.disabled = false;
-            stationDropdown.removeAttribute('disabled');
-            console.log('Dropdown should now be enabled. Disabled status:', stationDropdown.disabled);
-            
-            document.getElementById('stationDetailsCard').style.display = 'none';
-            
-            if (stations.length === 0) {
-                showError(`No stations found for grade level: ${selectedGrade}. Please check your data and column names.`);
-                stationDropdown.disabled = true;
-            } else {
-                console.log(`SUCCESS: Found ${stations.length} stations for grade ${selectedGrade}`);
-            }
-        }
-        
-        function handleStationChange() {
-            const selectedStation = document.getElementById('stationDropdown').value;
-            
-            if (!selectedStation) {
-                document.getElementById('stationDetailsCard').style.display = 'none';
-                return;
-            }
-            
-            const [stationName, staNum] = selectedStation.split('|');
-            console.log('Selected station:', stationName, 'Sta #:', staNum);
-            
-            filteredData = allData.filter(row => {
-                const rowStationName = String(row['Station Name'] || '').trim();
-                const rowStaNum = String(row['Sta #'] || '').trim();
-                const targetStationName = String(stationName || '').trim();
-                const targetStaNum = String(staNum || '').trim();
-                
-                const nameMatch = rowStationName === targetStationName;
-                const staNumMatch = rowStaNum === targetStaNum;
-                
-                console.log('Comparing:', {
-                    rowStationName,
-                    targetStationName,
-                    nameMatch,
-                    rowStaNum,
-                    targetStaNum,
-                    staNumMatch,
-                    bothMatch: nameMatch && staNumMatch
-                });
-                
-                return nameMatch && staNumMatch;
-            });
-            
-            console.log('Filtered data for station:', filteredData);
-            console.log('Number of rows found:', filteredData.length);
-            
-            if (filteredData.length === 0) {
-                showError(`No data found for station: ${stationName} ${staNum}. Please check your data.`);
-                document.getElementById('stationDetailsCard').style.display = 'none';
-                return;
-            }
-            
-            const containerOrder = ['Main', 'Tote#1', 'Tote#2', 'Tote#3', 'Tote#4', 'Tote#5', 'External'];
-            filteredData.sort((a, b) => {
-                const aIndex = containerOrder.indexOf(a['Container Type']);
-                const bIndex = containerOrder.indexOf(b['Container Type']);
-                return aIndex - bIndex;
-            });
-            
-            displayStationDetails();
-        }
-        
-        function displayStationDetails() {
-            const tbody = document.getElementById('stationTableBody');
-            tbody.innerHTML = '';
-            
-            filteredData.forEach((row, index) => {
-                const tr = document.createElement('tr');
-                const containerClass = getContainerClass(row['Container Type']);
-                tr.className = containerClass;
-                
-                tr.innerHTML = `
-                    <td>
-                        <input type="radio" name="selectRow" value="${index}" class="form-check-input">
-                    </td>
-                    <td>${row['Sta Code'] || ''}</td>
-                    <td>${row['Station Color Code'] || ''}</td>
-                    <td>${row['Container Type'] || ''}</td>
-                    <td>${row['Type Item'] || ''}</td>
-                    <td>${row['Station Item'] || ''}</td>
-                    <td>${row['Item Cost'] || ''}</td>
-                    <td>${row['Storage Location'] || ''}</td>
-                    <td>${row['Replenish'] || ''}</td>
-                    <td>${row['Elect'] || ''}</td>
-                    <td>${row['Tablecloth Name'] || ''}</td>
-                    <td>
-                        <button class="btn btn-sm btn-warning me-1" onclick="editRow(${index})">Edit</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteRow(${index})">Delete</button>
-                    </td>
-                `;
-                
-                tbody.appendChild(tr);
-            });
-            
-            document.getElementById('stationDetailsCard').style.display = 'block';
-        }
-        
-        function getContainerClass(containerType) {
-            const classMap = {
-                'Main': 'container-type-main',
-                'Tote#1': 'container-type-tote1',
-                'Tote#2': 'container-type-tote2',
-                'Tote#3': 'container-type-tote3',
-                'Tote#4': 'container-type-tote4',
-                'Tote#5': 'container-type-tote5',
-                'External': 'container-type-external'
-            };
-            return classMap[containerType] || '';
-        }
-        
-        function editRow(index) {
-            currentEditingRow = index;
-            const row = filteredData[index];
-            
-            document.getElementById('editStaCode').value = row['Sta Code'] || '';
-            document.getElementById('editStationColorCode').value = row['Station Color Code'] || '';
-            document.getElementById('editContainerType').value = row['Container Type'] || '';
-            document.getElementById('editTypeItem').value = row['Type Item'] || '';
-            document.getElementById('editStationItem').value = row['Station Item'] || '';
-            document.getElementById('editItemCost').value = row['Item Cost'] || '';
-            document.getElementById('editStorageLocation').value = row['Storage Location'] || '';
-            document.getElementById('editReplenish').value = row['Replenish'] || '';
-            document.getElementById('editElect').value = row['Elect'] || '';
-            document.getElementById('editTableclothName').value = row['Tablecloth Name'] || '';
-            
-            document.getElementById('modalTitle').textContent = 'Edit Row';
-            editModal.show();
-        }
-        
-        function deleteRow(index) {
-            if (confirm('Are you sure you want to delete this row?')) {
-                const row = filteredData[index];
-                const actualRowIndex = findActualRowIndex(row);
-                console.log('Deleting row at filtered index:', index, 'actual index:', actualRowIndex);
-                sendDataToSheet('delete', row, actualRowIndex);
-            }
-        }
-        
-        function handleAddRow() {
-            const selectedStation = document.getElementById('stationDropdown').value;
-            if (!selectedStation) {
-                showError('Please select a station first.');
-                return;
-            }
-            
-            currentEditingRow = null;
-            document.getElementById('editForm').reset();
-            document.getElementById('modalTitle').textContent = 'Add New Row';
-            editModal.show();
-        }
-        
-        function handleSave() {
-            const formData = {
-                'Sta Code': document.getElementById('editStaCode').value,
-                'Station Color Code': document.getElementById('editStationColorCode').value,
-                'Container Type': document.getElementById('editContainerType').value,
-                'Type Item': document.getElementById('editTypeItem').value,
-                'Station Item': document.getElementById('editStationItem').value,
-                'Item Cost': document.getElementById('editItemCost').value,
-                'Storage Location': document.getElementById('editStorageLocation').value,
-                'Replenish': document.getElementById('editReplenish').value,
-                'Elect': document.getElementById('editElect').value,
-                'Tablecloth Name': document.getElementById('editTableclothName').value
-            };
-            
-            if (currentEditingRow === null) {
-                // Adding new row
-                const selectedStation = document.getElementById('stationDropdown').value;
-                const [stationName, staNum] = selectedStation.split('|');
-                const selectedGrade = document.getElementById('gradeDropdown').value;
-                
-                formData['Station Name'] = stationName;
-                formData['Sta #'] = staNum;
-                formData['Station Grade'] = selectedGrade;
-                
-                console.log('Adding new row with data:', formData);
-                sendDataToSheet('add', formData, null);
-            } else {
-                // Updating existing row
-                const originalRow = filteredData[currentEditingRow];
-                formData['Station Name'] = originalRow['Station Name'];
-                formData['Sta #'] = originalRow['Sta #'];
-                formData['Station Grade'] = originalRow['Station Grade'];
-                
-                const actualRowIndex = findActualRowIndex(originalRow);
-                console.log('Updating row at filtered index:', currentEditingRow, 'actual index:', actualRowIndex);
-                console.log('Update data:', formData);
-                
-                sendDataToSheet('update', formData, actualRowIndex);
-            }
-        }
-        
-        function findActualRowIndex(targetRow) {
-            // Find the actual index in allData for the row we want to update/delete
-            const index = allData.findIndex(row => 
-                String(row['Station Name'] || '').trim() === String(targetRow['Station Name'] || '').trim() &&
-                String(row['Sta #'] || '').trim() === String(targetRow['Sta #'] || '').trim() &&
-                String(row['Sta Code'] || '').trim() === String(targetRow['Sta Code'] || '').trim() &&
-                String(row['Container Type'] || '').trim() === String(targetRow['Container Type'] || '').trim() &&
-                String(row['Station Item'] || '').trim() === String(targetRow['Station Item'] || '').trim()
-            );
-            console.log('Finding actual row index for:', targetRow);
-            console.log('Found at index:', index);
-            return index;
-        }
-        
-        function sendDataToSheet(action, data, rowIndex = null) {
-            console.log('sendDataToSheet called with:', { action, data, rowIndex });
-            showLoading(true);
-            
-            // Disable save button to prevent double-clicks
-            const saveBtn = document.getElementById('saveBtn');
-            saveBtn.disabled = true;
-            saveBtn.textContent = 'Saving...';
-            
-            const callbackName = 'jsonpCallback' + Date.now();
-            window[callbackName] = function(response) {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .container {
-            max-width: 1200px;
-            margin-top: 20px;
-        }
-        .card {
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border: none;
-            border-radius: 10px;
-        }
-        .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 10px 10px 0 0 !important;
-        }
-        .table-container {
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        .table th {
-            background-color: #495057;
-            color: white;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-        }
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-        }
-        .loading {
-            text-align: center;
-            padding: 20px;
-        }
-        .error-message {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-        }
-        .form-row {
-            margin-bottom: 15px;
-        }
-        .modal-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .container-type-main { background-color: #e3f2fd; }
-        .container-type-tote1 { background-color: #f3e5f5; }
-        .container-type-tote2 { background-color: #e8f5e8; }
-        .container-type-tote3 { background-color: #fff3e0; }
-        .container-type-tote4 { background-color: #ffebee; }
-        .container-type-tote5 { background-color: #f1f8e9; }
-        .container-type-external { background-color: #fafafa; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1 class="text-center mb-4 text-primary">STEM Fest Stations</h1>
-        
-
-        
-        <!-- Dropdown 1: Grade Selection -->
-        <div class="card mb-3">
+        <!-- Setup Instructions -->
+        <div class="card mt-4">
             <div class="card-header">
-                <h5 class="mb-0">Grade Selection</h5>
+                <h5 class="mb-0">Setup Instructions</h5>
             </div>
             <div class="card-body">
-                <select id="gradeDropdown" class="form-select">
-                    <option value="">Select Grade Level</option>
-                    <option value="K2">K2</option>
-                    <option value="3rd-12th">3rd-12th</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Dropdown 2: Station Selection -->
-        <div class="card mb-3">
-            <div class="card-header">
-                <h5 class="mb-0">Station Selection</h5>
-            </div>
-            <div class="card-body">
-                <select id="stationDropdown" class="form-select" disabled>
-                    <option value="">Select a Station</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Station Details Table -->
-        <div class="card mb-3" id="stationDetailsCard" style="display: none;">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Station Details</h5>
-                <button id="addRowBtn" class="btn btn-success btn-sm">
-                    <i class="fas fa-plus"></i> Add New Row
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-container">
-                    <table class="table table-striped table-hover" id="stationTable">
-                        <thead>
-                            <tr>
-                                <th>Select</th>
-                                <th>Sta Code</th>
-                                <th>Station Color Code</th>
-                                <th>Container Type</th>
-                                <th>Type Item</th>
-                                <th>Station Item</th>
-                                <th>Item Cost</th>
-                                <th>Storage Location</th>
-                                <th>Replenish</th>
-                                <th>Elect</th>
-                                <th>Tablecloth Name</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="stationTableBody">
-                        </tbody>
-                    </table>
+                <h6>To connect to your Google Sheets:</h6>
+                <ol>
+                    <li><strong>Create Google Apps Script:</strong>
+                        <ul>
+                            <li>Go to <a href="https://script.google.com" target="_blank">script.google.com</a></li>
+                            <li>Click "New Project"</li>
+                            <li>Replace the default code with the provided Apps Script code</li>
+                            <li>Save the project (Ctrl+S)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Deploy as Web App:</strong>
+                        <ul>
+                            <li>Click "Deploy" → "New deployment"</li>
+                            <li>Choose type: "Web app"</li>
+                            <li>Execute as: "Me"</li>
+                            <li>Who has access: "Anyone"</li>
+                            <li>Click "Deploy"</li>
+                            <li>Copy the Web app URL</li>
+                        </ul>
+                    </li>
+                    <li><strong>Update HTML:</strong>
+                        <ul>
+                            <li>Replace "YOUR_SCRIPT_ID" in the WEB_APP_URL with your actual Apps Script deployment URL</li>
+                            <li>The URL should look like: <code>https://script.google.com/macros/s/SCRIPT_ID/exec</code></li>
+                        </ul>
+                    </li>
+                    <li><strong>Test Connection:</strong>
+                        <ul>
+                            <li>Click the "Test Connection" button above</li>
+                            <li>If successful, the connection status will disappear and you can use the app</li>
+                        </ul>
+                    </li>
+                </ol>
+                
+                <div class="alert alert-info">
+                    <strong>Note:</strong> Make sure your Google Sheet has the correct structure:
+                    <ul class="mb-0">
+                        <li>Sheet name: "MasterStations"</li>
+                        <li>Headers in row 3 (A3:M3)</li>
+                        <li>Data starting from row 4</li>
+                        <li>Required columns: Station Grade, Station Name, Sta #, Sta Code, Station Color Code, Container Type, Type Item, Station Item, Item Cost, Storage Location, Replenish, Elect, Tablecloth Name</li>
+                    </ul>
                 </div>
             </div>
-        </div>
-
-        <!-- Loading Indicator -->
-        <div id="loadingIndicator" class="loading" style="display: none;">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p>Loading data...</p>
         </div>
     </div>
 
@@ -1436,3 +753,141 @@
             
             const callbackName = 'jsonpCallback' + Date.now();
             window[callbackName] = function(response) {
+                console.log('Response received:', response);
+                showLoading(false);
+                
+                // Re-enable save button
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+                
+                if (response && response.success) {
+                    console.log('Success! Showing modal...');
+                    showSuccessModal(getSuccessMessage(action));
+                    editModal.hide();
+                    
+                    // Store current selections before refresh
+                    const currentGrade = document.getElementById('gradeDropdown').value;
+                    const currentStation = document.getElementById('stationDropdown').value;
+                    
+                    // Refresh the data and restore view immediately
+                    refreshCurrentView(currentGrade, currentStation);
+                } else {
+                    console.log('Error in response:', response);
+                    showErrorModal('Save Failed', 'Operation failed: ' + (response?.error || 'Unknown error occurred while saving.'));
+                }
+                
+                // Cleanup
+                delete window[callbackName];
+                const scriptEl = document.querySelector(`script[src*="${callbackName}"]`);
+                if (scriptEl) document.head.removeChild(scriptEl);
+            };
+            
+            // Build URL parameters properly
+            let url = `${WEB_APP_URL}?action=${encodeURIComponent(action)}&callback=${callbackName}`;
+            
+            if (data) {
+                url += `&data=${encodeURIComponent(JSON.stringify(data))}`;
+            }
+            
+            if (rowIndex !== null && rowIndex !== undefined) {
+                url += `&rowIndex=${encodeURIComponent(rowIndex)}`;
+            }
+            
+            console.log('Request URL:', url);
+            
+            const script = document.createElement('script');
+            script.src = url;
+            script.onerror = function() {
+                console.log('Script error occurred');
+                showLoading(false);
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+                showErrorModal('Connection Failed', 'Unable to connect to Google Sheets. Please check your internet connection and try again.');
+                delete window[callbackName];
+                document.head.removeChild(script);
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        function refreshCurrentView(currentGrade, currentStation) {
+            console.log('Refreshing current view with grade:', currentGrade, 'station:', currentStation);
+            
+            // Show a subtle loading indicator for the refresh
+            const tableContainer = document.querySelector('.table-container');
+            if (tableContainer) {
+                tableContainer.style.opacity = '0.6';
+                tableContainer.style.pointerEvents = 'none';
+            }
+            
+            // Reload data from Google Sheets
+            const callbackName = 'refreshCallback' + Date.now();
+            window[callbackName] = function(response) {
+                // Restore table appearance
+                if (tableContainer) {
+                    tableContainer.style.opacity = '1';
+                    tableContainer.style.pointerEvents = 'auto';
+                }
+                
+                if (response.error) {
+                    showErrorModal('Refresh Failed', 'Failed to refresh data: ' + response.error);
+                    return;
+                }
+                
+                // Update the global data
+                allData = response.data || [];
+                console.log('Data refreshed, total rows:', allData.length);
+                
+                // Restore the previous selections and display
+                if (currentGrade && currentStation) {
+                    // Set the grade dropdown
+                    document.getElementById('gradeDropdown').value = currentGrade;
+                    
+                    // Trigger grade change to populate stations
+                    handleGradeChange();
+                    
+                    // Small delay to ensure stations are populated, then set station
+                    setTimeout(() => {
+                        const stationDropdown = document.getElementById('stationDropdown');
+                        stationDropdown.value = currentStation;
+                        
+                        // Trigger station change to display the updated data
+                        handleStationChange();
+                        
+                        console.log('View refreshed and restored successfully');
+                    }, 100);
+                }
+                
+                // Cleanup
+                delete window[callbackName];
+                const script = document.querySelector(`script[src*="${callbackName}"]`);
+                if (script) document.head.removeChild(script);
+            };
+            
+            // Create script tag for JSONP to get fresh data
+            const script = document.createElement('script');
+            script.src = `${WEB_APP_URL}?action=getData&callback=${callbackName}`;
+            script.onerror = function() {
+                if (tableContainer) {
+                    tableContainer.style.opacity = '1';
+                    tableContainer.style.pointerEvents = 'auto';
+                }
+                showErrorModal('Refresh Failed', 'Failed to refresh data. Please try reloading the page.');
+                delete window[callbackName];
+                document.head.removeChild(script);
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        function getSuccessMessage(action) {
+            switch(action) {
+                case 'add': return 'Row added successfully!';
+                case 'update': return 'Row updated successfully!';
+                case 'delete': return 'Row deleted successfully!';
+                default: return 'Operation completed successfully!';
+            }
+        }
+    </script>
+</body>
+</html>
